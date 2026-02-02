@@ -39,6 +39,23 @@ Add this line:
 0 6 * * * /bin/bash -lc 'cd "/Users/arnavsmac/Downloads/University_at_Buffalo/Personal/AI-newsletter" && source .venv/bin/activate && python src/run_once.py'
 ```
 
+## CrewAI mode (OpenAI)
+
+To enable CrewAI summarization, set in `.env`:
+```
+USE_CREWAI=true
+OPENAI_API_KEY=your_openai_key
+OPENAI_MODEL_NAME=gpt-4o
+```
+
+## Docker (optional)
+
+If you prefer Docker:
+```
+docker compose build
+docker compose run --rm ai-newsletter
+```
+
 ## Gmail App Password
 
 If you use Gmail SMTP, create an App Password:

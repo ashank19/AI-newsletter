@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  ai-newsletter:
+    build: .
+    env_file:
+      - .env
+    restart: "no"

@@ -1,9 +1,10 @@
 # AI Newsletter
 
-A small, personal project that sends a **daily AI updates digest** to your email. It pulls the most recent AI‑related items (e.g., Hacker News) and summarizes them into concise bullet points so you can scan the latest developments quickly.
+A small, personal project that sends a **daily AI updates + news digest** to your email. It pulls the most recent AI‑related items (e.g., Hacker News) and summarizes them into concise bullet points so you can scan the latest developments quickly.
 
 ## What it does
 - Fetches the latest AI‑related stories
+- Includes relevant news updates when available
 - Summarizes each item into short bullet points
 - Sends a clean daily email digest
 

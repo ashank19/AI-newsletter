@@ -1,0 +1,52 @@
+Daily Newsletter
+
+Latest AI Updates
+-----------------
+- Show HN: Nono – Kernel-enforced sandboxing for AI agents
+  - NONO provides OS-enforced sandboxing using native security primitives, ensuring unauthorized operations are structurally impossible without interception or filtering.
+  - It supports AI agents and processes such as Claude, GPT, and OpenClaw on Linux via Landlock and macOS via Seatbelt, with Windows support planned.
+  - NONO follows a capability-based security model, requires the Rust toolchain, and offers simple, fast setup with inherited restrictions for all child processes.
+- Show HN: An open-source Chrome extension that lets any LLMs control the browser
+  - Open-source Claude browser agent supports multi-providers for full browser automation and integrates with any LLM.
+  - Users can choose subscription plans or pay-per-use API keys for high-level task automation without API billing.
+  - Installation steps involve enabling developer mode in Chrome, and using either ChatGPT or Claude subscriptions.
+- Show HN: local speech-to-text is shockingly fast on Apple Silicon
+  - Onit Dictate offers free, offline voice dictation for Mac, ensuring privacy with no need for internet connectivity.
+  - The tool includes a smart writing assistant, QuickEdit, for one-click text improvements and allows easy corrections and adaptation to the user’s speech.
+  - Onit differs from competitors by processing locally to remove filler words and correct grammar, with options to customize shortcuts and UI settings.
+- Show HN: X-Pilot – Code-Driven AI Video Generator for Online Courses
+  - X-Pilot is an AI-powered tool for transforming PDFs, PPTs, and Markdown into professional-quality educational videos with built-in knowledge visualization, requiring no video editing skills.
+  - It offers a comprehensive suite for educators and content creators, enabling rapid video production with features like motion graphics, voiceovers, and structured video outlines, suitable for diverse applications from corporate training to online courses.
+  - Users benefit from full creative control and 100% commercial rights over video content, harnessing AI to automate scripting and visualization while focusing on accurate knowledge representation and engaging content delivery.
+- Show HN: Gambit, an open-source agent harness for building reliable AI agents
+  - Gambit is an open-source framework for creating reliable LLM workflows using small, typed decks with clear inputs/outputs and built-in debugging tools.
+  - To use Gambit, requirements include Node.js 18+, OPENROUTER_API_KEY, and running the CLI with npx for example files and environment setup.
+  - The framework provides tools for local deck execution, streaming traces, UI debugging, and supports customization with TypeScript decks and context/response schema validation.
+
+International News
+------------------
+- International News
+  - Pakistan's military reported killing 145 militants in a two-day battle following a series of attacks.
+  - India is advancing its local rare earths and data center industry amid rising global tensions.
+  - Iran experiences explosions causing public anxiety and rumors about possible upcoming attacks.
+
+National News
+-------------
+- National News
+  - Trump has ordered the removal or alteration of Native American signage at a national park.
+  - Ohio University's online bachelor's programs are ranked in the national top 30, with veteran programs also noted among Ohio's best.
+  - Over 300 anti-ICE protests are planned across the United States for this weekend.
+
+US News
+-------
+- US News
+  - A Democrat won a historically Republican district in Texas, surprising the GOP.
+  - Trump cautioned Iran about the consequences of not agreeing to a nuclear deal, hinting at potential conflict.
+  - Liam Ramos, a preschooler, and his father were released from immigration detention and arrived in Minneapolis.
+
+India News
+----------
+- India News
+  - Former President Trump claims India will purchase oil from Venezuela instead of Iran.
+  - This shift in oil import sources was reported by major news outlets including Al Jazeera, NDTV, and Hindustan Times.
+  - Trump's statement may reflect a strategic change in India’s foreign oil procurement policy.

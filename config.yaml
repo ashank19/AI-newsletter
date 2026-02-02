@@ -1,0 +1,29 @@
+newsletter:
+  title: "Daily News"
+  max_items_total: 10
+
+sections:
+  hacker_news:
+    title: "Latest AI Updates"
+    max_items: 5
+    query: "AI OR LLM OR model OR GPT OR agent"
+
+  google_news_international:
+    title: "International News"
+    max_items: 3
+    query: "international news"
+
+  google_news_national:
+    title: "National News"
+    max_items: 3
+    query: "US national news"
+
+  google_news_us:
+    title: "US News"
+    max_items: 3
+    query: "US news"
+
+  google_news_india:
+    title: "India News"
+    max_items: 3
+    query: "India news"

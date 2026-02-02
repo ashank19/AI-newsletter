@@ -15,7 +15,7 @@ sections:
 
   google_news_national:
     title: "National News"
-    max_items: 3
+    max_items: 0
     query: "US national news"
 
   google_news_us:

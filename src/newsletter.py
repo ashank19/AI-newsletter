@@ -236,7 +236,6 @@ def render_text(sections: Dict[str, Dict[str, Any]]) -> str:
 
     for section in sections.values():
         lines.append(section["title"])
-        lines.append("-" * len(section["title"]))
         if not section["items"]:
             continue
         for item in section["items"]:
@@ -280,6 +279,8 @@ def build_sections(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     for key, meta in section_config.items():
         sections[key] = {"title": meta.get("title", key), "items": []}
         max_items = int(meta.get("max_items", 5))
+        if max_items <= 0:
+            continue
 
         if key == "youtube":
             channels = meta.get("channels", [])

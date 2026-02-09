@@ -3,6 +3,23 @@ newsletter:
   max_items_total: 10
 
 sections:
+  youtube:
+    title: "YouTube: Latest Videos (last 3 days)"
+    max_items: 5
+    max_age_days: 3
+    max_attempts: 5
+    channels:
+      - "https://www.youtube.com/channel/UCz8QaiQxApLq8sLNcszYyJw"
+      - "https://www.youtube.com/ThinkSchool"
+      - "https://www.youtube.com/VarunMayya"
+      - "https://www.youtube.com/CaspianReport"
+      - "https://www.youtube.com/RealLifeLore"
+    channel_id_overrides:
+      "https://www.youtube.com/ThinkSchool": "UCKZozRVHRYsYHGEyNKuhhdA"
+      "https://www.youtube.com/VarunMayya": "UCsQoiOrh7jzKmE8NBofhTnQ"
+      "https://www.youtube.com/CaspianReport": "UCwnKziETDbHJtx78nIkfYug"
+      "https://www.youtube.com/RealLifeLore": "UCP5tjEmvPItGyLhmjdwP7Ww"
+
   hacker_news:
     title: "Latest AI Updates"
     max_items: 5
@@ -17,11 +34,6 @@ sections:
     title: "National News"
     max_items: 0
     query: "US national news"
-
-  google_news_us:
-    title: "US News"
-    max_items: 3
-    query: "US news"
 
   google_news_india:
     title: "India News"

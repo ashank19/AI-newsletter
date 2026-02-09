@@ -9,6 +9,9 @@ def main() -> None:
     try:
         load_dotenv()
         print("Loaded .env")
+        print("EMAIL_USER:", os.getenv("EMAIL_USER"))
+        print("EMAIL_TO:", os.getenv("EMAIL_TO"))
+        print("EMAIL_HOST:", os.getenv("EMAIL_HOST"))
         config = load_config(os.path.join(os.path.dirname(__file__), "..", "config.yaml"))
         print("Loaded config.yaml")
         sections = build_sections(config)

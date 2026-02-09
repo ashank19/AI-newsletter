@@ -5,4 +5,7 @@ requests==2.31.0
 PyYAML==6.0.1
 beautifulsoup4==4.12.3
 youtube-transcript-api==0.6.2
-crewai==0.130.0
+faster-whisper==1.0.3
+setuptools>=68.0.0
+wheel>=0.42.0
+yt-dlp>=2024.03.10

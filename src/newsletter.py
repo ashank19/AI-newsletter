@@ -329,15 +329,32 @@ def fetch_article_text(url: str) -> str:
 def _normalize_summary(summary: str) -> str:
     if not summary:
         return ""
-    bullets = [line.strip() for line in summary.splitlines() if line.strip()]
-    if not bullets:
+    lines = [line.strip() for line in summary.splitlines() if line.strip()]
+    if not lines:
         return ""
-    cleaned = []
-    for line in bullets:
-        if not line.startswith("-"):
-            line = f"- {line.lstrip('- ').strip()}"
-        cleaned.append(line)
-    return "\n".join(cleaned)
+
+    cleaned: List[str] = []
+    for line in lines:
+        # Drop common LLM preambles like: "Here are the N bullet points..."
+        low = line.lower()
+        if "here are" in low and "bullet" in low:
+            continue
+
+        # Keep only actual bullets (or numbered items) to avoid preamble text leaking into emails.
+        if line.startswith(("-", "•", "*")):
+            text = line.lstrip("-•* ").strip()
+            if text:
+                cleaned.append(f"- {text}")
+            continue
+
+        m = re.match(r"^\\d+\\s*[\\).:-]\\s*(.+)$", line)
+        if m:
+            text = m.group(1).strip()
+            if text:
+                cleaned.append(f"- {text}")
+            continue
+
+    return "\n".join(cleaned).strip()
 
 
 def _pick_entry_with_transcript(entries: List[Any], max_attempts: int = 5, max_age_days: int = 3) -> Any:

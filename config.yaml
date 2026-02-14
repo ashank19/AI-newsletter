@@ -19,6 +19,10 @@ sections:
       "https://www.youtube.com/VarunMayya": "UCsQoiOrh7jzKmE8NBofhTnQ"
       "https://www.youtube.com/CaspianReport": "UCwnKziETDbHJtx78nIkfYug"
       "https://www.youtube.com/RealLifeLore": "UCP5tjEmvPItGyLhmjdwP7Ww"
+    # Optional: friendly display names (used in the email only).
+    # Keys can be either a UC... channel_id or the exact channel URL.
+    channel_name_overrides:
+      "UCz8QaiQxApLq8sLNcszYyJw": "Firstpost"
 
   hacker_news:
     title: "Latest AI Updates"

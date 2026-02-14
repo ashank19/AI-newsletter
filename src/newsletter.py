@@ -195,16 +195,23 @@ def fetch_youtube_items(
     channels: List[str],
     max_items: int,
     channel_id_overrides: Dict[str, str] = None,
+    channel_name_overrides: Dict[str, str] = None,
     max_attempts: int = 5,
     max_age_days: int = 3,
 ) -> List[Dict[str, Any]]:
     items: List[Dict[str, Any]] = []
     overrides = channel_id_overrides or {}
+    name_overrides = channel_name_overrides or {}
     for channel in channels:
-        channel_name = _channel_name_from_url(channel)
         channel_id = resolve_channel_id(channel, overrides)
         if not channel_id:
             continue
+        # Prefer a friendly display name override (by channel_id or exact URL), otherwise derive from URL.
+        channel_name = (
+            (name_overrides.get(channel_id) or "").strip()
+            or (name_overrides.get(channel) or "").strip()
+            or _channel_name_from_url(channel)
+        )
         feed_url = YOUTUBE_RSS.format(channel_id=channel_id)
         feed = _parse_youtube_feed(feed_url)
         if not feed.entries:
@@ -452,12 +459,14 @@ def build_sections(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         if key == "youtube":
             channels = meta.get("channels", [])
             overrides = meta.get("channel_id_overrides", {}) or {}
+            name_overrides = meta.get("channel_name_overrides", {}) or {}
             yt_attempts = int(meta.get("max_attempts", 5))
             yt_age_days = int(meta.get("max_age_days", 3))
             items = fetch_youtube_items(
                 channels,
                 max_items,
                 channel_id_overrides=overrides,
+                channel_name_overrides=name_overrides,
                 max_attempts=yt_attempts,
                 max_age_days=yt_age_days,
             )

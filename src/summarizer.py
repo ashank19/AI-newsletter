@@ -1,5 +1,21 @@
 import os
 import requests
+import re
+
+
+def _fallback_bullets(text: str, bullet_count: int) -> str:
+    """
+    Extremely simple fallback when the LLM endpoint is unavailable.
+    Keeps the pipeline running so scheduled sends still deliver an email.
+    """
+    cleaned = re.sub(r"\s+", " ", (text or "")).strip()
+    if not cleaned:
+        return ""
+
+    # Naive sentence split; good enough as a "keep the lights on" fallback.
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", cleaned) if s.strip()]
+    picks = (sentences or [cleaned])[: max(1, bullet_count)]
+    return "\n".join(f"- {s[:240].rstrip()}" for s in picks)
 
 
 def summarize_content(text: str, focus: str, bullet_count: int = 3) -> str:
@@ -59,7 +75,12 @@ def summarize_with_ollama(text: str, focus: str, bullet_count: int) -> str:
     )
 
     payload = {"model": model, "prompt": prompt, "stream": False}
-    response = requests.post(f"{base_url}/api/generate", json=payload, timeout=120)
-    response.raise_for_status()
-    data = response.json()
-    return data.get("response", "").strip()
+    try:
+        response = requests.post(f"{base_url}/api/generate", json=payload, timeout=120)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("response", "").strip()
+    except requests.RequestException:
+        return _fallback_bullets(text, bullet_count)
+    except ValueError:
+        return _fallback_bullets(text, bullet_count)

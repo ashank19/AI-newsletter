@@ -253,17 +253,27 @@ def fetch_youtube_items(
     return items[:max_items]
 
 
-def fetch_google_news(query: str, max_items: int) -> List[Dict[str, Any]]:
+def fetch_google_news(query: str, max_items: int, max_age_days: int = 2) -> List[Dict[str, Any]]:
     url = GOOGLE_NEWS_RSS.format(query=requests.utils.quote(query))
     feed = feedparser.parse(url)
     results = []
-    for entry in feed.entries[:max_items]:
-        results.append({
-            "title": entry.get("title", ""),
-            "url": entry.get("link", ""),
-            "published": entry.get("published", ""),
-            "source": "Google News",
-        })
+    cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+    for entry in feed.entries:
+        published = entry.get("published_parsed")
+        if published:
+            published_dt = datetime.fromtimestamp(time.mktime(published), tz=timezone.utc)
+            if published_dt < cutoff:
+                continue
+        results.append(
+            {
+                "title": entry.get("title", ""),
+                "url": entry.get("link", ""),
+                "published": entry.get("published", ""),
+                "source": "Google News",
+            }
+        )
+        if len(results) >= max_items:
+            break
     return results
 
 
@@ -493,7 +503,8 @@ def build_sections(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
             items = fetch_hacker_news(query, max_items)
         elif key.startswith("google_news"):
             query = meta.get("query", "AI")
-            items = fetch_google_news(query, max_items)
+            gn_age_days = int(meta.get("max_age_days", 2))
+            items = fetch_google_news(query, max_items, max_age_days=gn_age_days)
             # Summarize combined headlines into 3 bullets (no links in email)
             combined = " ".join(item.get("title", "") for item in items)
             if combined:
@@ -507,12 +518,5 @@ def build_sections(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
             items = []
 
         sections[key]["items"] = items
-
-    # If no recent YouTube items, keep Google News sections; otherwise drop them.
-    youtube_items = sections.get("youtube", {}).get("items", [])
-    if youtube_items:
-        for key in list(sections.keys()):
-            if key.startswith("google_news"):
-                sections.pop(key, None)
 
     return sections

@@ -13,8 +13,7 @@ def run_digest() -> None:
     config = load_config(os.path.join(os.path.dirname(__file__), "..", "config.yaml"))
     sections = build_sections(config)
 
-    subject_prefix = os.getenv("EMAIL_SUBJECT_PREFIX", "[AI Newsletter]")
-    subject = f"{subject_prefix} {datetime.now().strftime('%Y-%m-%d')}"
+    subject = "Daily newsletter"
 
     text_body = render_text(sections)
     html_body = render_html(sections)

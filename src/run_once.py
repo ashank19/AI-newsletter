@@ -16,7 +16,7 @@ def main() -> None:
         print("Loaded config.yaml")
         sections = build_sections(config)
         print("Built sections")
-        subject = os.getenv("EMAIL_SUBJECT_PREFIX", "[AI Newsletter]") + " Test Run"
+        subject = "Daily newsletter"
         text_body = render_text(sections)
         html_body = render_html(sections)
         print("Rendered email content")

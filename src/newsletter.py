@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any
 from urllib.parse import urlparse
+import glob
 
 import feedparser
 import requests
@@ -173,17 +174,34 @@ def _fetch_transcript_text(video_id: str) -> str:
             os.path.join(os.path.dirname(__file__), "..", ".cache", "audio"),
         )
         audio_path = find_audio_for_video(video_id, audio_dir)
+        fetched_by_agent = False
         if not audio_path and os.getenv("ENABLE_AUDIO_FETCHER", "").lower() in {"1", "true", "yes"}:
             # Optional hook: user-provided audio fetcher.
             video_url = f"https://www.youtube.com/watch?v={video_id}"
             audio_path = fetch_audio_for_video(video_url, video_id, audio_dir)
+            fetched_by_agent = bool(audio_path)
         if not audio_path:
             return ""
 
         wav_dir = os.path.join(os.path.dirname(__file__), "..", ".cache", "normalized")
         wav_path = os.path.join(wav_dir, f"{video_id}.wav")
-        normalize_audio_to_wav(audio_path, wav_path)
-        return transcribe_audio_to_english_text(wav_path)
+        try:
+            normalize_audio_to_wav(audio_path, wav_path)
+            return transcribe_audio_to_english_text(wav_path)
+        finally:
+            # User preference: don't persist fetched audio after a successful/failed run.
+            cleanup = os.getenv("CLEANUP_FETCHED_AUDIO", "true").lower() in {"1", "true", "yes"}
+            if cleanup and fetched_by_agent:
+                # Remove any fetched artifacts for this video from the audio cache + normalized cache.
+                for path in glob.glob(os.path.join(audio_dir, f"{video_id}.*")):
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        pass
+                try:
+                    os.remove(wav_path)
+                except OSError:
+                    pass
     except Exception as e:
         # Never crash the whole newsletter for one video; just treat it as "no transcript" and keep scanning.
         if os.getenv("DEBUG_YOUTUBE", "").lower() in {"1", "true", "yes"}:

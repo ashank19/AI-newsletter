@@ -22,6 +22,18 @@ cp .env.example .env
 pip install -r requirements.txt
 ```
 
+4) Make sure Ollama is running (used for summarization by default):
+
+- Install Ollama (macOS app), then in a terminal:
+```
+ollama serve
+```
+
+- Pull the model you configured in `.env` (example):
+```
+ollama pull llama3.1:8b
+```
+
 4) Test a one‑off send:
 ```
 python src/run_once.py
@@ -48,6 +60,11 @@ If a YouTube video has no transcript/captions available, the project can still s
 brew install ffmpeg
 ```
 
+2) If you enable the optional audio fetcher, you also need `yt-dlp`:
+```
+brew install yt-dlp
+```
+
 2) Transcription engine (default is `faster_whisper`).
 Default model is `small` (set `WHISPER_MODEL` if you want a different one).
 
@@ -59,7 +76,7 @@ AI-newsletter/.cache/audio/<video_id>.m4a
 4) The next run will:
 - normalize audio to 16kHz mono wav
 - transcribe + translate to English using local Whisper (faster-whisper)
-- summarize using your local Ollama model
+- summarize using your local Ollama model (make sure `ollama serve` is running)
 
 Optional automation hook:
 - There is a stub module at `AI-newsletter/src/audio_fetcher.py`.

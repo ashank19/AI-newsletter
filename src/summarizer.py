@@ -22,6 +22,35 @@ def summarize_content(text: str, focus: str, bullet_count: int = 3) -> str:
     return summarize_with_ollama(text, focus, bullet_count)
 
 
+def _extract_bullets(output: str) -> list[str]:
+    """
+    Extract bullet-like lines from model output and normalize to "- ...".
+    """
+    if not output:
+        return []
+    lines = [ln.strip() for ln in output.splitlines() if ln.strip()]
+    bullets: list[str] = []
+    for line in lines:
+        low = line.lower()
+        if "here are" in low and "bullet" in low:
+            continue
+
+        if line.startswith(("-", "•", "*")):
+            text = line.lstrip("-•* ").strip()
+            if text:
+                bullets.append(f"- {text}")
+            continue
+
+        m = re.match(r"^\d+\s*[\).:-]\s*(.+)$", line)
+        if m:
+            text = m.group(1).strip()
+            if text:
+                bullets.append(f"- {text}")
+            continue
+
+    return bullets
+
+
 def _ollama_options_from_env() -> dict:
     """
     Convert optional env vars into Ollama generate options.
@@ -92,19 +121,23 @@ def _ollama_generate(prompt: str, timeout: int = 180) -> str:
     return (data.get("response") or "").strip()
 
 
-def _build_summary_prompt(text: str, focus: str, bullet_count: int) -> str:
+def _build_summary_prompt(text: str, focus: str, max_bullets: int) -> str:
     """
     Prompt tuned for consistent bullet output (no preamble, no markdown headers).
     """
+    # Keep it short by default; allow fewer bullets for thin content.
+    min_bullets = 2 if max_bullets <= 3 else 3
     return (
         "You are a concise newsletter editor.\n"
         "Task: write a factual summary from the provided content.\n"
         f"Output requirements:\n"
-        f"- EXACTLY {bullet_count} bullet points\n"
+        f"- Write between {min_bullets} and {max_bullets} bullet points depending on content density\n"
+        f"- Never exceed {max_bullets} bullets\n"
         "- Each bullet must start with '- '\n"
         "- No intro sentences, no headings, no 'Here are...' preambles\n"
         "- No links, no citations, no markdown formatting beyond the leading '- '\n"
         "- Prefer concrete nouns (people/orgs/models), numbers, and outcomes if present\n"
+        "- Keep bullets short (aim <= 20 words each)\n"
         "- If the content is unclear, write the most defensible high-level bullets without guessing\n"
         f"\nContext: {focus}\n"
         "\nContent:\n"
@@ -113,6 +146,8 @@ def _build_summary_prompt(text: str, focus: str, bullet_count: int) -> str:
 
 
 def summarize_with_ollama(text: str, focus: str, bullet_count: int) -> str:
+    # `bullet_count` is treated as a maximum; the model may output fewer bullets if content is thin.
+    max_bullets = max(1, int(bullet_count))
     # For long transcripts, do a simple 2-pass summarize to stay within context.
     max_input_chars = int(os.getenv("OLLAMA_MAX_INPUT_CHARS", "20000"))
     text = (text or "").strip()
@@ -121,13 +156,17 @@ def summarize_with_ollama(text: str, focus: str, bullet_count: int) -> str:
 
     try:
         if len(text) <= max_input_chars:
-            prompt = _build_summary_prompt(text, focus, bullet_count)
-            return _ollama_generate(prompt)
+            prompt = _build_summary_prompt(text, focus, max_bullets)
+            raw = _ollama_generate(prompt)
+            bullets = _extract_bullets(raw)
+            if not bullets:
+                return _fallback_bullets(text, max_bullets)
+            return "\n".join(bullets[:max_bullets]).strip()
 
         # Pass 1: chunk -> short bullets per chunk
         chunk_size = max_input_chars
         overlap = 500
-        chunk_bullets = max(2, min(3, bullet_count))
+        chunk_bullets = max(2, min(3, max_bullets))
         interim_parts: list[str] = []
         start = 0
         while start < len(text):
@@ -141,9 +180,13 @@ def summarize_with_ollama(text: str, focus: str, bullet_count: int) -> str:
 
         # Pass 2: combine -> final bullets
         combined = "\n".join(interim_parts)
-        prompt = _build_summary_prompt(combined, f"{focus} (combined)", bullet_count)
-        return _ollama_generate(prompt)
+        prompt = _build_summary_prompt(combined, f"{focus} (combined)", max_bullets)
+        raw = _ollama_generate(prompt)
+        bullets = _extract_bullets(raw)
+        if not bullets:
+            return _fallback_bullets(text, max_bullets)
+        return "\n".join(bullets[:max_bullets]).strip()
     except requests.RequestException:
-        return _fallback_bullets(text, bullet_count)
+        return _fallback_bullets(text, max_bullets)
     except ValueError:
-        return _fallback_bullets(text, bullet_count)
+        return _fallback_bullets(text, max_bullets)

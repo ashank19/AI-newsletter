@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 from newsletter import load_config, build_sections, render_html, render_text
 from emailer import send_email
+from cleanup import cleanup_audio_artifacts
 
 
 def main() -> None:
@@ -36,6 +37,8 @@ def main() -> None:
         import traceback
         print("Run failed:", exc)
         traceback.print_exc()
+    finally:
+        cleanup_audio_artifacts()
 
 
 if __name__ == "__main__":

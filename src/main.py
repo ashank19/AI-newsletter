@@ -7,25 +7,29 @@ from dotenv import load_dotenv
 
 from newsletter import load_config, build_sections, render_html, render_text
 from emailer import send_email
+from cleanup import cleanup_audio_artifacts
 
 
 def run_digest() -> None:
-    config = load_config(os.path.join(os.path.dirname(__file__), "..", "config.yaml"))
-    sections = build_sections(config)
+    try:
+        config = load_config(os.path.join(os.path.dirname(__file__), "..", "config.yaml"))
+        sections = build_sections(config)
 
-    subject = "Daily newsletter"
+        subject = "Daily newsletter"
 
-    text_body = render_text(sections)
-    html_body = render_html(sections)
+        text_body = render_text(sections)
+        html_body = render_html(sections)
 
-    output_dir = os.path.join(os.path.dirname(__file__), "..", "output")
-    os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, "latest.txt"), "w", encoding="utf-8") as f:
-        f.write(text_body)
-    with open(os.path.join(output_dir, "latest.html"), "w", encoding="utf-8") as f:
-        f.write(html_body)
+        output_dir = os.path.join(os.path.dirname(__file__), "..", "output")
+        os.makedirs(output_dir, exist_ok=True)
+        with open(os.path.join(output_dir, "latest.txt"), "w", encoding="utf-8") as f:
+            f.write(text_body)
+        with open(os.path.join(output_dir, "latest.html"), "w", encoding="utf-8") as f:
+            f.write(html_body)
 
-    send_email(subject, text_body, html_body)
+        send_email(subject, text_body, html_body)
+    finally:
+        cleanup_audio_artifacts()
 
 
 def main() -> None:

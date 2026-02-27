@@ -19,67 +19,130 @@ def _fallback_bullets(text: str, bullet_count: int) -> str:
 
 
 def summarize_content(text: str, focus: str, bullet_count: int = 3) -> str:
-    use_crewai = os.getenv("USE_CREWAI", "").lower() in {"1", "true", "yes"}
-    if use_crewai:
-        try:
-            return summarize_with_crewai(text, focus, bullet_count)
-        except Exception:
-            # Fall back to Ollama if CrewAI fails
-            pass
     return summarize_with_ollama(text, focus, bullet_count)
 
 
-def summarize_with_crewai(text: str, focus: str, bullet_count: int) -> str:
-    if not os.getenv("OPENAI_API_KEY"):
-        raise ValueError("OPENAI_API_KEY is required for CrewAI summarization.")
+def _ollama_options_from_env() -> dict:
+    """
+    Convert optional env vars into Ollama generate options.
+    Keeping this configurable makes it easier to tune summary "style" without code changes.
+    """
+    options: dict = {}
+    # Use low temperature for deterministic bullet formatting.
+    temp = os.getenv("OLLAMA_TEMPERATURE", "").strip()
+    top_p = os.getenv("OLLAMA_TOP_P", "").strip()
+    num_ctx = os.getenv("OLLAMA_NUM_CTX", "").strip()
+    num_predict = os.getenv("OLLAMA_NUM_PREDICT", "").strip()
+    repeat_penalty = os.getenv("OLLAMA_REPEAT_PENALTY", "").strip()
 
-    from crewai import Agent, Task, Crew
+    def _maybe_float(v: str) -> float | None:
+        try:
+            return float(v)
+        except Exception:
+            return None
 
-    agent = Agent(
-        role="Summarizer",
-        goal="Summarize content into exactly 3 crisp bullet points.",
-        backstory="You create concise summaries for busy readers.",
-        allow_delegation=False,
-        verbose=False,
+    def _maybe_int(v: str) -> int | None:
+        try:
+            return int(v)
+        except Exception:
+            return None
+
+    if temp:
+        f = _maybe_float(temp)
+        if f is not None:
+            options["temperature"] = f
+    else:
+        options["temperature"] = 0.2
+
+    if top_p:
+        f = _maybe_float(top_p)
+        if f is not None:
+            options["top_p"] = f
+
+    if repeat_penalty:
+        f = _maybe_float(repeat_penalty)
+        if f is not None:
+            options["repeat_penalty"] = f
+
+    if num_ctx:
+        i = _maybe_int(num_ctx)
+        if i is not None:
+            options["num_ctx"] = i
+
+    if num_predict:
+        i = _maybe_int(num_predict)
+        if i is not None:
+            options["num_predict"] = i
+
+    return options
+
+
+def _ollama_generate(prompt: str, timeout: int = 180) -> str:
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+    model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": _ollama_options_from_env(),
+    }
+    response = requests.post(f"{base_url}/api/generate", json=payload, timeout=timeout)
+    response.raise_for_status()
+    data = response.json()
+    return (data.get("response") or "").strip()
+
+
+def _build_summary_prompt(text: str, focus: str, bullet_count: int) -> str:
+    """
+    Prompt tuned for consistent bullet output (no preamble, no markdown headers).
+    """
+    return (
+        "You are a concise newsletter editor.\n"
+        "Task: write a factual summary from the provided content.\n"
+        f"Output requirements:\n"
+        f"- EXACTLY {bullet_count} bullet points\n"
+        "- Each bullet must start with '- '\n"
+        "- No intro sentences, no headings, no 'Here are...' preambles\n"
+        "- No links, no citations, no markdown formatting beyond the leading '- '\n"
+        "- Prefer concrete nouns (people/orgs/models), numbers, and outcomes if present\n"
+        "- If the content is unclear, write the most defensible high-level bullets without guessing\n"
+        f"\nContext: {focus}\n"
+        "\nContent:\n"
+        f"{text}\n"
     )
-
-    task = Task(
-        description=(
-            f"Summarize the following content into EXACTLY {bullet_count} bullet points. "
-            "Each bullet should be a short, crisp sentence. "
-            f"Context: {focus}.\n\nContent:\n{text}"
-        ),
-        expected_output=f"Exactly {bullet_count} bullet points, each starting with '-'",
-        agent=agent,
-    )
-
-    crew = Crew(agents=[agent], tasks=[task], verbose=False)
-    result = crew.kickoff()
-
-    if hasattr(result, "tasks_output") and result.tasks_output:
-        return result.tasks_output[-1].raw.strip()
-    return str(result).strip()
 
 
 def summarize_with_ollama(text: str, focus: str, bullet_count: int) -> str:
-    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    # For long transcripts, do a simple 2-pass summarize to stay within context.
+    max_input_chars = int(os.getenv("OLLAMA_MAX_INPUT_CHARS", "20000"))
+    text = (text or "").strip()
+    if not text:
+        return ""
 
-    prompt = (
-        f"Summarize the following content into EXACTLY {bullet_count} bullet points. "
-        "Each bullet should be a short, crisp sentence. "
-        "Focus on key developments, names, and capabilities if present. "
-        f"Context: {focus}.\n\n"
-        f"Content:\n{text}\n\n"
-        "Return ONLY bullet points, each starting with '-'"
-    )
-
-    payload = {"model": model, "prompt": prompt, "stream": False}
     try:
-        response = requests.post(f"{base_url}/api/generate", json=payload, timeout=120)
-        response.raise_for_status()
-        data = response.json()
-        return data.get("response", "").strip()
+        if len(text) <= max_input_chars:
+            prompt = _build_summary_prompt(text, focus, bullet_count)
+            return _ollama_generate(prompt)
+
+        # Pass 1: chunk -> short bullets per chunk
+        chunk_size = max_input_chars
+        overlap = 500
+        chunk_bullets = max(2, min(3, bullet_count))
+        interim_parts: list[str] = []
+        start = 0
+        while start < len(text):
+            end = min(len(text), start + chunk_size)
+            chunk = text[start:end]
+            prompt = _build_summary_prompt(chunk, f"{focus} (partial)", chunk_bullets)
+            interim_parts.append(_ollama_generate(prompt))
+            if end >= len(text):
+                break
+            start = max(0, end - overlap)
+
+        # Pass 2: combine -> final bullets
+        combined = "\n".join(interim_parts)
+        prompt = _build_summary_prompt(combined, f"{focus} (combined)", bullet_count)
+        return _ollama_generate(prompt)
     except requests.RequestException:
         return _fallback_bullets(text, bullet_count)
     except ValueError:

@@ -8,6 +8,11 @@ A small, personal project that sends a **daily AI updates + news digest** to you
 - Summarizes each item into short bullet points
 - Sends a clean daily email digest
 
+## Why I Built This
+This project wasn't about building the next SaaS product.
+It was about reclaiming attention. In an age where every platform is optimized to maximize your time-on-screen, building tools that filter noise and surface signal is a genuine productivity superpower.
+Automation isn't about doing less work — it's about making space for better work.
+
 ## Quick start
 
 1) Create `.env` from the example:
